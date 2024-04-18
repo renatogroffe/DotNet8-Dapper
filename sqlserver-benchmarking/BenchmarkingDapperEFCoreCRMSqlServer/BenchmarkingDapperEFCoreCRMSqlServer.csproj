@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="DB\BaseCRMADO.sql" />
+    <None Remove="DB\BaseCRMDapper.sql" />
+    <None Remove="DB\BaseCRMDapperContrib.sql" />
+    <None Remove="DB\BaseCRMEF.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="DB\BaseCRMADO.sql" />
+    <EmbeddedResource Include="DB\BaseCRMDapper.sql" />
+    <EmbeddedResource Include="DB\BaseCRMDapperContrib.sql" />
+    <EmbeddedResource Include="DB\BaseCRMEF.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    <PackageReference Include="Bogus" Version="35.5.0" />
+    <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
+    <PackageReference Include="dbup-sqlserver" Version="5.0.40" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.4" />
+  </ItemGroup>
+
+</Project>

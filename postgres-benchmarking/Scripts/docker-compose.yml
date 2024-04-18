@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres
+    volumes:
+      - ./01-basecrmado.sql:/docker-entrypoint-initdb.d/01-basecrmado.sql
+      - ./02-basecrmdapper.sql:/docker-entrypoint-initdb.d/02-basecrmdapper.sql
+      - ./03-basecrmef.sql:/docker-entrypoint-initdb.d/03-basecrmef.sql
+    environment:
+      POSTGRES_PASSWORD: "Postgres2024!"
+    ports:
+      - "5432:5432"

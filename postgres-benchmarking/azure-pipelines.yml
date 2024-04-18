@@ -1,0 +1,104 @@
+resources:
+  containers:
+    - container: postgres
+      image: postgres
+      networks: 
+      - testes
+      env:
+        POSTGRES_PASSWORD: Postgres2024!
+      ports:
+        - 5432:5432
+
+variables:
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+  # Variáveis para execução dos testes de integração
+  Path_ScriptsSqlServer: './Scripts'
+  Path_Tests: './BenchmarkingDapperEFCoreCRMPostgres'
+  BaseEFCore: 'Server=127.0.0.1;Port=5432;Database=basecrmef;User Id=postgres;Password=Postgres2024!'
+  BaseDapper: 'Server=127.0.0.1;Port=5432;Database=basecrmdapper;User Id=postgres;Password=Postgres2024!'
+  BaseADO: 'Server=127.0.0.1;Port=5432;Database=basecrmado;User Id=postgres;Password=Postgres2024!'
+  PGPASSWORD: 'Postgres2024!'
+  Path_ArtifactsBenchmarking: '/BenchmarkingDapperEFCoreCRMPostgres/BenchmarkDotNet.Artifacts/results'
+  ArtifactBenchmarkingHtml: 'BenchmarkingDapperEFCoreCRMPostgres.Tests.CRMTests-report.html'
+  ArtifactBenchmarkingMarkdown: 'BenchmarkingDapperEFCoreCRMPostgres.Tests.CRMTests-report-github.md'
+
+stages:
+- stage: Tests
+  displayName: Tests stage
+  variables:
+    - group: benchmarkdotnet
+  jobs:
+  - job: Tests
+    displayName: Tests
+    pool:
+      vmImage: $(vmImageName)
+    services:
+      postgres: postgres
+    steps:
+    - script: |
+        docker images
+        docker container ls
+        echo 'Aguardar por 10s a subida da instancia do SQL Server...'
+        sleep 10s
+        docker container ls
+      displayName: Exibir imagens e container em execução
+    - script: |
+        psql -h 127.0.0.1 -p 5432 -d postgres -U postgres -f $(Path_ScriptsSqlServer)/01-basecrmado.sql
+      displayName: Criar banco BaseCRMADO
+    - script: |
+        psql -h 127.0.0.1 -p 5432 -d postgres -U postgres -f $(Path_ScriptsSqlServer)/02-basecrmdapper.sql
+      displayName: Criar banco BaseCRMDapper
+    - script: |
+        psql -h 127.0.0.1 -p 5432 -d postgres -U postgres -f $(Path_ScriptsSqlServer)/03-basecrmef.sql
+      displayName: Criar banco BaseCRMEF
+    - script: |
+        echo '*** SDKs do .NET intalados ***'
+        dotnet --list-sdks
+        echo '*** Versão assumida como default para o .NET ***'
+        dotnet --version
+      displayName: Exibir versoes instaladas do .NET SDK
+    - script: |
+        cd $(Path_Tests)
+        ls
+        dotnet run --filter BenchmarkingDapperEFCoreCRMPostgres.Tests.* -c Release
+      displayName: Executar benchmarking com testes de performance - Entity Framework Core x Dapper x ADO
+      env:
+        BaseEFCoreConnectionString: $(BaseEFCore)
+        BaseDapperConnectionString: $(BaseDapper)
+        BaseADOConnectionString: $(BaseADO)
+        NumeroContatosPorCompanhia: $(NoContatosPorCompanhia)
+    - task: PublishHtmlReport@1
+      inputs:
+        reportDir: '$(Build.SourcesDirectory)/$(Path_ArtifactsBenchmarking)/$(ArtifactBenchmarkingHtml)'
+      displayName: Publicar resultado no formato HTML
+    - task: PublishMarkdownReports@1
+      inputs:
+        contentPath: '$(Build.SourcesDirectory)/$(Path_ArtifactsBenchmarking)'
+        indexFile: '$(ArtifactBenchmarkingMarkdown)'
+      displayName: Publicar resultado no formato Markdown
+    - script: |
+        echo '*** Empresas ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmado -U postgres -c "SELECT * FROM \"Empresas\" LIMIT 10;"
+        echo ''
+        echo '*** Contatos ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmado -U postgres -c "SELECT * FROM \"Contatos\" LIMIT 30;"
+      condition: always() 
+      displayName: Exibir amostragem de registros criados na base BaseCRMADO
+    - script: |
+        echo '*** Empresas ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmef -U postgres -c "SELECT * FROM \"Empresas\" LIMIT 10;"
+        echo ''
+        echo '*** Contatos ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmef -U postgres -c "SELECT * FROM \"Contatos\" LIMIT 30;"
+      condition: always() 
+      displayName: Exibir amostragem de registros criados na base BaseCRMEF
+    - script: |
+        echo '*** Empresas ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmdapper -U postgres -c "SELECT * FROM \"Empresas\" LIMIT 10;"
+        echo ''
+        echo '*** Contatos ***'
+        psql -h 127.0.0.1 -p 5432 -d basecrmdapper -U postgres -c "SELECT * FROM \"Contatos\" LIMIT 30;"
+      condition: always()
+      displayName: Exibir amostragem de registros criados na base BaseCRMDapper
