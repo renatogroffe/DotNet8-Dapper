@@ -20,7 +20,7 @@ namespace APIEstados.Data
 
         public async Task<IEnumerable<Estado>> Get(string? siglaEstado = null)
         {
-            var conexao = new SQLiteConnection(
+            using var conexao = new SQLiteConnection(
                 _configuration.GetConnectionString("BaseDadosGeograficos"));
 
             var strbQuery = new StringBuilder();
