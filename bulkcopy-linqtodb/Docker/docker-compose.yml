@@ -1,0 +1,18 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "SqlServer2019!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+  mssqltools:
+    image: mcr.microsoft.com/mssql-tools
+    depends_on:
+      - sqlserver
+    volumes:
+      - ./01-BaseEmpresas.sql:/tmp/01-BaseEmpresas.sql
+      - ./02-BaseEmpresas.sql:/tmp/02-BaseEmpresas.sql
+      - ./init-sqlserver.sh:/tmp/init-sqlserver.sh
+    command: /bin/bash ./tmp/init-sqlserver.sh
